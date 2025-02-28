@@ -105,6 +105,7 @@ data PragmaOptions = PragmaOptions
   , _optUniverseCheck             :: WithDefault 'True
   , _optOmegaInOmega              :: WithDefault 'False
   , _optCumulativity              :: WithDefault 'False
+  , _optDefaultLevel              :: WithDefault 'False
   , _optSizedTypes                :: WithDefault 'False
   , _optGuardedness               :: WithDefault 'False
   , _optInjectiveTypeConstructors :: WithDefault 'False
