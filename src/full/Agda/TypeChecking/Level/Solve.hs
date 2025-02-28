@@ -30,12 +30,27 @@ import Agda.Utils.Monad
 defaultOpenLevelsToZero :: (PureTCM m, MonadMetaSolver m) => m a -> m a
 defaultOpenLevelsToZero f = ifNotM (optCumulativity <$> pragmaOptions) f $ do
   (result, newMetas) <- metasCreatedBy f
-  defaultLevelsToZero (openMetas newMetas)
+  defaultLevelsToZero True (openMetas newMetas)
   return result
 
+isLevelMeta :: forall m. (PureTCM m, MonadMetaSolver m) => MetaId -> m Bool
+isLevelMeta x = do
+  TelV tel t <- telView =<< metaType x
+  addContext tel $ isLevelType t
+
+openLevelMetas :: forall m. (PureTCM m, MonadMetaSolver m) => [MetaId] -> m [MetaId]
+openLevelMetas xs = filterM (isNothing <.> isInteractionMeta) xs
+  >>= filterM (fmap (== NoGeneralize) . isGeneralizableMeta)
+  >>= filterM isLevelMeta
+
+isUpperBoundFor :: ProblemConstraint -> MetaId -> Bool
+isUpperBoundFor c x = case clValue (theConstraint c) of
+  LevelCmp CmpLeq l u -> not $ mentionsMeta x u
+  _                   -> False
+
 defaultLevelsToZero ::
-  forall m. (PureTCM m, MonadMetaSolver m) => LocalMetaStore -> m ()
-defaultLevelsToZero xs = loop =<< openLevelMetas (MapS.keys xs)
+  forall m. (PureTCM m, MonadMetaSolver m) => Bool -> LocalMetaStore -> m ()
+defaultLevelsToZero checkBounds xs = loop =<< openLevelMetas (MapS.keys xs)
   where
     loop :: [MetaId] -> m ()
     loop xs = do
@@ -43,9 +58,10 @@ defaultLevelsToZero xs = loop =<< openLevelMetas (MapS.keys xs)
       xs <- filterM isOpen xs
       allMetaTypes <- getOpenMetas >>= traverse metaType
       let notInTypeOfMeta x = not $ mentionsMeta x allMetaTypes
+      let boundCondition x cs = if checkBounds then all (`isUpperBoundFor` x) cs else True
       progress <- forM xs $ \x -> do
         cs <- filter (mentionsMeta x) <$> getAllConstraints
-        if | notInTypeOfMeta x , all (`isUpperBoundFor` x) cs -> do
+        if | notInTypeOfMeta x , boundCondition x cs -> do
                m <- lookupMeta x
                TelV tel t <- telView =<< metaType x
                addContext tel $ assignV DirEq x (teleArgs tel) (Level $ ClosedLevel 0) (AsTermsOf t)
@@ -54,18 +70,3 @@ defaultLevelsToZero xs = loop =<< openLevelMetas (MapS.keys xs)
            | otherwise -> return False
 
       when (or progress) $ (loop xs)
-
-    openLevelMetas :: [MetaId] -> m [MetaId]
-    openLevelMetas xs = filterM (isNothing <.> isInteractionMeta) xs
-      >>= filterM (fmap (== NoGeneralize) . isGeneralizableMeta)
-      >>= filterM isLevelMeta
-
-    isLevelMeta :: MetaId -> m Bool
-    isLevelMeta x = do
-      TelV tel t <- telView =<< metaType x
-      addContext tel $ isLevelType t
-
-    isUpperBoundFor :: ProblemConstraint -> MetaId -> Bool
-    isUpperBoundFor c x = case clValue (theConstraint c) of
-      LevelCmp CmpLeq l u -> not $ mentionsMeta x u
-      _                   -> False

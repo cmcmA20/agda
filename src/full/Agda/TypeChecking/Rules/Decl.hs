@@ -213,7 +213,10 @@ checkDecl d = setCurrentRange d $ do
 
       -- Defaulting of levels (only when --cumulativity)
       whenM (optCumulativity <$> pragmaOptions) $
-        defaultLevelsToZero (openMetas metas)
+        defaultLevelsToZero True (openMetas metas)
+
+      whenM (optDefaultLevel <$> pragmaOptions) $
+        defaultLevelsToZero False (openMetas metas)
 
       -- Post-typing checks.
       whenJust finalChecks \theMutualChecks -> do

@@ -125,6 +125,7 @@ module Agda.Interaction.Options.Base
     , optUniverseCheck
     , optOmegaInOmega
     , optCumulativity
+    , optDefaultLevel
     , optSizedTypes
     , optGuardedness
     , optInjectiveTypeConstructors
@@ -295,6 +296,7 @@ optTerminationCheck          :: PragmaOptions -> Bool
 optUniverseCheck             :: PragmaOptions -> Bool
 optOmegaInOmega              :: PragmaOptions -> Bool
 optCumulativity              :: PragmaOptions -> Bool
+optDefaultLevel              :: PragmaOptions -> Bool
 optSizedTypes                :: PragmaOptions -> Bool
 optGuardedness               :: PragmaOptions -> Bool
 optInjectiveTypeConstructors :: PragmaOptions -> Bool
@@ -359,6 +361,7 @@ optTerminationCheck          = collapseDefault . _optTerminationCheck
 optUniverseCheck             = collapseDefault . _optUniverseCheck
 optOmegaInOmega              = collapseDefault . _optOmegaInOmega
 optCumulativity              = collapseDefault . _optCumulativity
+optDefaultLevel              = collapseDefault . _optDefaultLevel
 optSizedTypes                = collapseDefault . _optSizedTypes
 optGuardedness               = collapseDefault . _optGuardedness
 optInjectiveTypeConstructors = collapseDefault . _optInjectiveTypeConstructors
@@ -490,6 +493,9 @@ lensOptOmegaInOmega f o = f (_optOmegaInOmega o) <&> \ i -> o{ _optOmegaInOmega 
 
 lensOptCumulativity :: Lens' PragmaOptions _
 lensOptCumulativity f o = f (_optCumulativity o) <&> \ i -> o{ _optCumulativity = i }
+
+lensOptDefaultLevel :: Lens' PragmaOptions _
+lensOptDefaultLevel f o = f (_optDefaultLevel o) <&> \ i -> o{ _optDefaultLevel = i }
 
 lensOptSizedTypes :: Lens' PragmaOptions _
 lensOptSizedTypes f o = f (_optSizedTypes o) <&> \ i -> o{ _optSizedTypes = i }
@@ -714,6 +720,7 @@ defaultPragmaOptions = PragmaOptions
   , _optUniverseCheck             = Default
   , _optOmegaInOmega              = Default
   , _optCumulativity              = Default
+  , _optDefaultLevel              = Default
   , _optSizedTypes                = Default
   , _optGuardedness               = Default
   , _optInjectiveTypeConstructors = Default
@@ -1518,6 +1525,9 @@ pragmaOptions = concat
   , pragmaFlag      "cumulativity" lensOptCumulativity
                     "enable subtyping of universes" "(e.g. Set =< Set₁)"
                     $ Just "disable subtyping of universes"
+  , pragmaFlag      "default-level" lensOptDefaultLevel
+                    "enable level guessing" "whatever"
+                    $ Just "disable level guessing"
   , pragmaFlag      "prop" lensOptProp
                     "enable the use of the Prop universe" ""
                     $ Just "disable the use of the Prop universe"
